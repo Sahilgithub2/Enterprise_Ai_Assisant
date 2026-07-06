@@ -1,4 +1,3 @@
-from urllib import response
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -6,6 +5,46 @@ from app.core.config import GEMINI_API_KEY
 
 from app.services.vector_service import (
     search_chunks
+)
+
+from langchain_core.prompts import (
+    ChatPromptTemplate
+)
+
+prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """
+You are a helpful AI assistant.
+
+Use the retrieved document context when answering document-related questions.
+
+If the answer is not present in the document, answer using your general knowledge and clearly indicate that it was not found in the uploaded document.
+"""
+        ),
+
+        (
+            "human",
+            """
+Conversation History:
+
+{history}
+
+---------------------
+
+Retrieved Context:
+
+{context}
+
+---------------------
+
+Question:
+
+{question}
+"""
+        )
+    ]
 )
 
 llm = ChatGoogleGenerativeAI(
@@ -32,34 +71,20 @@ def ask_ai(messages):
 
     conversation_history = ""
 
-    for message in messages:
+    for message in messages[:-1]:
 
         conversation_history += (
-            f"{message['role']}: "
-            f"{message['content']}\n"
-        )
+        f"{message['role'].capitalize()}: "
+        f"{message['content']}\n"
+)
 
-    formatted_prompt = f"""
-    You are a helpful AI assistant.
-
-    Use the conversation history for memory/context.
-
-    Use the retrieved document context when answering
-    document-related questions.
-
-    -------------------------
-    Conversation History:
-    {conversation_history}
-
-    -------------------------
-    Retrieved Document Context:
-    {context}
-
-    -------------------------
-    Latest User Question:
-    {latest_question}
-    """
-
+    formatted_prompt = prompt.invoke(
+    {
+        "history": conversation_history,
+        "context": context,
+        "question": latest_question
+    }
+)
     response = llm.invoke(
     formatted_prompt
 )

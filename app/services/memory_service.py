@@ -7,7 +7,7 @@ from langchain_core.messages import (
     AIMessage
 )
 
-def get_chat_history(db: Session, session_id: str):
+def get_chat_history(db: Session, conversation_id: str):
 
     messages = db.query(ChatMessage).filter(
         ChatMessage.conversation_id == conversation_id

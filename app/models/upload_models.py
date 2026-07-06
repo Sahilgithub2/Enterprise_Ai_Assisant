@@ -2,4 +2,4 @@ from pydantic import BaseModel
 
 
 class UploadRequest(BaseModel):
-    session_id: str
+    conversation_id: str

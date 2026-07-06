@@ -20,7 +20,7 @@ reranker = CrossEncoder(
 
 def store_chunks(
     chunks,
-    session_id
+    conversation_id
 ):
 
     for index, chunk in enumerate(chunks):
@@ -28,7 +28,7 @@ def store_chunks(
         embedding = embedding_model.encode(chunk)
 
         collection.add(
-            ids=[f"{session_id}_{index}"],
+            ids=[f"{conversation_id}_{index}"],
 
             embeddings=[
                 embedding.tolist()
@@ -38,14 +38,14 @@ def store_chunks(
 
             metadatas=[
                 {
-                    "session_id": session_id
+                    "conversation_id": conversation_id
                 }
             ]
         )
 
 def search_chunks(
     query: str,
-    session_id: str
+    conversation_id: str
 ):
 
     query_embedding = embedding_model.encode(
@@ -61,7 +61,7 @@ def search_chunks(
         n_results=10,
 
         where={
-            "session_id": session_id
+            "conversation_id": conversation_id
         }
     )
 

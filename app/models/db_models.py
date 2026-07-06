@@ -9,8 +9,10 @@ class ChatMessage(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    session_id = Column(String, index=True)
+    conversation_id = Column(String, index=True)
 
     role = Column(String)
 
     content = Column(Text)
+
+    created_at = Column(String, default="")  # You can use a timestamp or datetime type if needed

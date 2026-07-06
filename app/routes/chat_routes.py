@@ -25,26 +25,26 @@ def chat(
 
     add_message(
         db,
-        request.session_id,
+        request.conversation_id,
         "user",
         request.question
     )
 
     history = get_chat_history(
         db,
-        request.session_id
+        request.conversation_id
     )
 
     ai_response = ask_ai(history)
 
     add_message(
         db,
-        request.session_id,
+        request.conversation_id,
         "assistant",
         ai_response
     )
 
     return {
-        "session_id": request.session_id,
+        "session_id": request.conversation_id,
         "response": ai_response
     }

@@ -17,13 +17,13 @@ def ask_ai(messages):
 
     latest_question = messages[-1]["content"]
 
-    session_id = messages[0].get(
-    "session_id"
+    conversation_id = messages[0].get(
+    "conversation_id"
 )
 
     retrieved_chunks = search_chunks(
         latest_question,
-        session_id
+        conversation_id
 )
 
     context = "\n".join(retrieved_chunks)

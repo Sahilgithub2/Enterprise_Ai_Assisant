@@ -23,7 +23,7 @@ router = APIRouter()
 
 async def upload_pdf(
 
-    session_id: str = Form(...),
+    conversation_id: str = Form(...),
 
     file: UploadFile = File(...)
 ):
@@ -51,11 +51,11 @@ async def upload_pdf(
 
     store_chunks(
         chunks,
-        session_id
+        conversation_id
     )
 
     return {
         "message": "PDF uploaded successfully",
-        "session_id": session_id,
+        "conversation_id": conversation_id,
         "chunks_stored": len(chunks)
     }

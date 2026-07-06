@@ -1,4 +1,6 @@
-import google.generativeai as genai
+from urllib import response
+
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.core.config import GEMINI_API_KEY
 
@@ -6,10 +8,10 @@ from app.services.vector_service import (
     search_chunks
 )
 
-genai.configure(api_key=GEMINI_API_KEY)
-
-model = genai.GenerativeModel(
-    "gemini-2.5-flash"
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash",
+    google_api_key=GEMINI_API_KEY,
+    temperature=0
 )
 
 
@@ -58,8 +60,9 @@ def ask_ai(messages):
     {latest_question}
     """
 
-    response = model.generate_content(
-        formatted_prompt
-    )
+    response = llm.invoke(
+    formatted_prompt
+)
 
-    return response.text
+    return response.content
+

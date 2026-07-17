@@ -8,7 +8,8 @@ from app.services.vector_service import (
 )
 
 from langchain_core.prompts import (
-    ChatPromptTemplate
+    ChatPromptTemplate,
+    MessagesPlaceholder
 )
 
 prompt = ChatPromptTemplate.from_messages(
@@ -18,22 +19,23 @@ prompt = ChatPromptTemplate.from_messages(
             """
 You are a helpful AI assistant.
 
-Use the retrieved document context when answering document-related questions.
+Use the retrieved document context when answering
+document-related questions.
 
-If the answer is not present in the document, answer using your general knowledge and clearly indicate that it was not found in the uploaded document.
+If the answer is not present in the document,
+answer using your general knowledge and clearly
+indicate that it was not found in the uploaded document.
 """
+        ),
+
+        MessagesPlaceholder(
+            variable_name="chat_history"
         ),
 
         (
             "human",
             """
-Conversation History:
-
-{history}
-
----------------------
-
-Retrieved Context:
+Retrieved Document Context:
 
 {context}
 
@@ -47,6 +49,7 @@ Question:
     ]
 )
 
+
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
     google_api_key=GEMINI_API_KEY,
@@ -54,40 +57,34 @@ llm = ChatGoogleGenerativeAI(
 )
 
 
-def ask_ai(messages):
+def ask_ai(
+    messages,
+    conversation_id
+):
 
-    latest_question = messages[-1]["content"]
+    latest_question = messages[-1].content
 
-    conversation_id = messages[0].get(
-    "conversation_id"
-)
+    chat_history = messages[:-1]
 
     retrieved_chunks = search_chunks(
         latest_question,
         conversation_id
-)
+    )
 
-    context = "\n".join(retrieved_chunks)
-
-    conversation_history = ""
-
-    for message in messages[:-1]:
-
-        conversation_history += (
-        f"{message['role'].capitalize()}: "
-        f"{message['content']}\n"
+    context = "\n".join(
+        retrieved_chunks
     )
 
     formatted_prompt = prompt.invoke(
-    {
-        "history": conversation_history,
-        "context": context,
-        "question": latest_question
-    }
-)
+        {
+            "chat_history": chat_history,
+            "context": context,
+            "question": latest_question
+        }
+    )
+
     response = llm.invoke(
-    formatted_prompt
-)
+        formatted_prompt
+    )
 
     return response.content
-

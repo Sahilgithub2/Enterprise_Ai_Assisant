@@ -35,7 +35,10 @@ def chat(
         request.conversation_id
     )
 
-    ai_response = ask_ai(history)
+    ai_response = ask_ai(
+        history,
+        request.conversation_id
+    )
 
     add_message(
         db,

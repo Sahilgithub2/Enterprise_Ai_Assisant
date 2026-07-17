@@ -76,7 +76,7 @@ def ask_ai(messages):
         conversation_history += (
         f"{message['role'].capitalize()}: "
         f"{message['content']}\n"
-)
+    )
 
     formatted_prompt = prompt.invoke(
     {

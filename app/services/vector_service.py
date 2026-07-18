@@ -1,18 +1,20 @@
-import chromadb
-
-from sentence_transformers import SentenceTransformer
 from sentence_transformers import CrossEncoder
 
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_core.documents import Document
+from langchain_chroma import Chroma
 
-client = chromadb.Client()
 
-collection = client.create_collection(
-    name="pdf_documents"
+embedding_model = HuggingFaceEmbeddings(
+    model_name="all-MiniLM-L6-v2"
 )
 
-embedding_model = SentenceTransformer(
-    "all-MiniLM-L6-v2"
+vector_store = Chroma(
+    collection_name="pdf_documents",
+    embedding_function=embedding_model,
+    persist_directory="./chroma_db"
 )
+
 reranker = CrossEncoder(
     "cross-encoder/ms-marco-MiniLM-L-6-v2"
 )
@@ -22,72 +24,75 @@ def store_chunks(
     chunks,
     conversation_id
 ):
+    documents = []
+    ids = []
 
     for index, chunk in enumerate(chunks):
-
-        embedding = embedding_model.encode(chunk)
-
-        collection.add(
-            ids=[f"{conversation_id}_{index}"],
-
-            embeddings=[
-                embedding.tolist()
-            ],
-
-            documents=[chunk],
-
-            metadatas=[
-                {
+        documents.append(
+            Document(
+                page_content=chunk,
+                metadata={
                     "conversation_id": conversation_id
                 }
-            ]
+            )
         )
 
-def search_chunks(
-    query: str,
-    conversation_id: str
-):
+        ids.append(
+            f"{conversation_id}_{index}"
+        )
 
-    query_embedding = embedding_model.encode(
-        query
+    vector_store.add_documents(
+        documents=documents,
+        ids=ids
     )
 
-    results = collection.query(
 
-        query_embeddings=[
-            query_embedding.tolist()
-        ],
+retriever = vector_store.as_retriever(
+    search_kwargs={
+        "k": 10
+    }
+)
 
-        n_results=10,
 
-        where={
+def search_chunks(
+    query,
+    conversation_id
+):
+    documents = retriever.invoke(
+        query,
+        filter={
             "conversation_id": conversation_id
         }
     )
 
-    retrieved_chunks = results["documents"][0]
+    print(f"Retrieved {len(documents)} documents")
 
-    reranked_chunks = rerank_chunks(
-    query,
-    retrieved_chunks
+    chunks = [
+        document.page_content
+        for document in documents
+    ]
+
+    return rerank_chunks(
+        query,
+        chunks
     )
 
-    return reranked_chunks
 
 def rerank_chunks(
     query,
     chunks
 ):
+    if not chunks:
+        return []
 
-    pairs = []
+    pairs = [
+        [query, chunk]
+        for chunk in chunks
+    ]
 
-    for chunk in chunks:
-
-        pairs.append(
-            [query, chunk]
-        )
-
-    scores = reranker.predict(pairs)
+    scores = reranker.predict(
+        pairs
+    )
 
     scored_chunks = list(
         zip(chunks, scores)
@@ -98,10 +103,7 @@ def rerank_chunks(
         reverse=True
     )
 
-    reranked_chunks = []
-
-    for chunk, score in scored_chunks:
-
-        reranked_chunks.append(chunk)
-
-    return reranked_chunks[:3]
+    return [
+        chunk
+        for chunk, _ in scored_chunks[:3]
+    ]

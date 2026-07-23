@@ -47,32 +47,30 @@ def store_chunks(
     )
 
 
-def rerank_chunks(
+def rerank_documents(
     query,
-    chunks
+    documents
 ):
-    if not chunks:
+    if not documents:
         return []
 
     pairs = [
-        [query, chunk]
-        for chunk in chunks
+        [query, document.page_content]
+        for document in documents
     ]
 
-    scores = reranker.predict(
-        pairs
+    scores = reranker.predict(pairs)
+
+    scored_documents = list(
+        zip(documents, scores)
     )
 
-    scored_chunks = list(
-        zip(chunks, scores)
-    )
-
-    scored_chunks.sort(
+    scored_documents.sort(
         key=lambda x: x[1],
         reverse=True
     )
 
     return [
-        chunk
-        for chunk, _ in scored_chunks[:3]
+        document
+        for document, _ in scored_documents[:3]
     ]

@@ -1,14 +1,16 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import (
-    ChatPromptTemplate,
-    MessagesPlaceholder,
+
+from app.prompts.chat_prompts import (
+    rewrite_prompt,
+    answer_prompt,
 )
+
 
 from app.core.config import GEMINI_API_KEY
 
 from app.services.vector_service import (
     vector_store,
-    rerank_chunks,
+    rerank_documents,
 )
 
 
@@ -17,66 +19,6 @@ llm = ChatGoogleGenerativeAI(
     google_api_key=GEMINI_API_KEY,
     temperature=0,
 )
-
-
-rewrite_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            """
-Given the chat history and the latest user question,
-rewrite the latest user question into a standalone question
-that can be understood without the previous conversation.
-
-Do NOT answer the question.
-
-Only rewrite it if necessary.
-Otherwise return it unchanged.
-"""
-        ),
-        MessagesPlaceholder(
-            variable_name="chat_history"
-        ),
-        (
-            "human",
-            "{question}"
-        ),
-    ]
-)
-
-
-answer_prompt = ChatPromptTemplate.from_messages(
-    [
-        (
-            "system",
-            """
-You are a helpful AI assistant.
-
-Use the retrieved document context when answering document-related questions.
-
-If the answer is not present in the document, answer using your general knowledge and clearly indicate that it was not found in the uploaded document.
-"""
-        ),
-        MessagesPlaceholder(
-            variable_name="chat_history"
-        ),
-        (
-            "human",
-            """
-Retrieved Document Context:
-
-{context}
-
----------------------
-
-Question:
-
-{question}
-"""
-        ),
-    ]
-)
-
 
 def rewrite_question(
     chat_history,
@@ -124,17 +66,15 @@ def ask_ai(
         standalone_question
     )
 
-    chunks = [
-        document.page_content
-        for document in documents
-    ]
-
-    retrieved_chunks = rerank_chunks(
+    retrieved_documents = rerank_documents(
         standalone_question,
-        chunks,
+        documents,
     )
 
-    context = "\n".join(retrieved_chunks)
+    context = "\n\n".join(
+        document.page_content
+        for document in retrieved_documents
+    )
 
     formatted_prompt = answer_prompt.invoke(
         {
@@ -149,4 +89,3 @@ def ask_ai(
     )
 
     return response.content
-

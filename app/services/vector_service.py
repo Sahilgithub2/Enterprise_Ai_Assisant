@@ -47,37 +47,6 @@ def store_chunks(
     )
 
 
-retriever = vector_store.as_retriever(
-    search_kwargs={
-        "k": 10
-    }
-)
-
-
-def search_chunks(
-    query,
-    conversation_id
-):
-    documents = retriever.invoke(
-        query,
-        filter={
-            "conversation_id": conversation_id
-        }
-    )
-
-    print(f"Retrieved {len(documents)} documents")
-
-    chunks = [
-        document.page_content
-        for document in documents
-    ]
-
-    return rerank_chunks(
-        query,
-        chunks
-    )
-
-
 def rerank_chunks(
     query,
     chunks

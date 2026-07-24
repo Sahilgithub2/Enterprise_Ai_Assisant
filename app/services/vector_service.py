@@ -59,7 +59,9 @@ def rerank_documents(
         for document in documents
     ]
 
-    scores = reranker.predict(pairs)
+    scores = reranker.predict(
+        pairs
+    )
 
     scored_documents = list(
         zip(documents, scores)
@@ -70,7 +72,4 @@ def rerank_documents(
         reverse=True
     )
 
-    return [
-        document
-        for document, _ in scored_documents[:3]
-    ]
+    return scored_documents[:3]

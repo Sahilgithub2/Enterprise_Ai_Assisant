@@ -1,4 +1,5 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
+from numpy import rint
 
 from app.prompts.chat_prompts import (
     rewrite_prompt,
@@ -67,13 +68,18 @@ def ask_ai(
     )
 
     retrieved_documents = rerank_documents(
-        standalone_question,
-        documents,
-    )
+    standalone_question,
+    documents,
+)
+
+    print("\nCrossEncoder Scores\n")
+
+    for document, score in retrieved_documents:
+        print(f"{score:.4f}")
 
     context = "\n\n".join(
-        document.page_content
-        for document in retrieved_documents
+    document.page_content
+    for document, score in retrieved_documents
     )
 
     formatted_prompt = answer_prompt.invoke(

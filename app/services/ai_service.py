@@ -11,6 +11,8 @@ from app.prompts.web_prompts import (
     web_search_prompt,
 )
 
+from app.prompts.router_prompt import router_prompt
+
 from app.services.vector_service import (
     vector_store,
     rerank_documents,
@@ -59,6 +61,11 @@ def ask_ai(
         chat_history,
         latest_question,
     )
+    route = route_question(
+    standalone_question
+)
+
+    print(f"Route: {route}")
 
     print(f"\nOriginal Question: {latest_question}")
     print(f"Standalone Question: {standalone_question}")
@@ -131,3 +138,17 @@ def ask_ai(
     )
 
     return response.content
+
+def route_question(question):
+
+    router_messages = router_prompt.invoke(
+        {
+            "question": question
+        }
+    )
+
+    response = llm.invoke(
+        router_messages
+    )
+
+    return response.content.strip()

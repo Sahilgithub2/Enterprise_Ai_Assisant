@@ -24,7 +24,25 @@ def search_web(query: str):
             }
         )
 
-    return results
+    formatted_results = []
+
+    for index, result in enumerate(results, start=1):
+        formatted_results.append(
+        f"""
+        Result {index}
+
+        Title:
+        {result["title"]}
+
+        Content:
+        {result["content"]}
+
+        Source:
+        {result["url"]}
+        """
+            )
+
+        return "\n\n".join(formatted_results)
 
 if __name__ == "__main__":
     result = search_web(

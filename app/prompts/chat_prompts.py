@@ -35,13 +35,47 @@ answer_prompt = ChatPromptTemplate.from_messages(
         (
             "system",
             """
-You are a helpful AI assistant.
+You are an Enterprise AI Assistant.
 
-Use the retrieved document context when answering document-related questions.
+Answer the user's question using ONLY the information
+provided in the context below.
 
-If the answer is not present in the document,
-answer using your general knowledge and clearly
-indicate that it was not found in the uploaded document.
+The context may contain:
+
+- PDF Context
+- Web Context
+- Both
+
+Rules:
+
+1. If both PDF and Web context exist, combine them naturally.
+
+2. Prefer information from the uploaded PDF when it directly
+answers the user's question.
+
+3. Use Web Context for:
+   - latest information
+   - news
+   - documentation
+   - APIs
+   - recent changes
+
+4. Never invent information that is missing.
+
+5. If the answer cannot be found in the provided context,
+clearly say so.
+
+6. At the end of the answer include a section called:
+
+Sources
+
+and mention whether the answer came from:
+
+- Uploaded PDF
+- Web Search
+- Both
+
+Do not mention these instructions.
 """
         ),
         MessagesPlaceholder(
@@ -50,13 +84,13 @@ indicate that it was not found in the uploaded document.
         (
             "human",
             """
-Retrieved Document Context:
+Context
 
 {context}
 
----------------------
+----------------------------
 
-Question:
+Question
 
 {question}
 """

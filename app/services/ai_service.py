@@ -7,19 +7,13 @@ from app.prompts.chat_prompts import (
     answer_prompt,
 )
 
-from app.prompts.web_prompts import (
-    web_search_prompt,
+from app.prompts.router_prompt import (
+    router_prompt,
 )
 
-from app.prompts.router_prompt import router_prompt
-
-from app.services.vector_service import (
-    vector_store,
-    rerank_documents,
-)
-
-from app.services.web_search_service import (
-    search_web,
+from app.tools import (
+    get_pdf_context,
+    get_web_context,
 )
 
 
@@ -28,8 +22,6 @@ llm = ChatGoogleGenerativeAI(
     google_api_key=GEMINI_API_KEY,
     temperature=0,
 )
-
-RETRIEVAL_THRESHOLD = 0.35
 
 
 def rewrite_question(
@@ -43,11 +35,29 @@ def rewrite_question(
         }
     )
 
-    response = llm.invoke(
-        rewrite_messages
-    )
+    response = llm.invoke(rewrite_messages)
 
     return response.content.strip()
+
+
+def route_question(
+    question,
+):
+    router_messages = router_prompt.invoke(
+        {
+            "question": question,
+        }
+    )
+
+    response = llm.invoke(router_messages)
+
+    tools = [
+        tool.strip().upper()
+        for tool in response.content.split(",")
+        if tool.strip()
+    ]
+
+    return tools
 
 
 def ask_ai(
@@ -61,94 +71,95 @@ def ask_ai(
         chat_history,
         latest_question,
     )
-    route = route_question(
-    standalone_question
-)
 
-    print(f"Route: {route}")
+    print("\n========== QUESTION ==========")
+    print(f"Original     : {latest_question}")
+    print(f"Standalone   : {standalone_question}")
 
-    print(f"\nOriginal Question: {latest_question}")
-    print(f"Standalone Question: {standalone_question}")
+    tools = route_question(
+        standalone_question,
+    )
 
-    retriever = vector_store.as_retriever(
-        search_kwargs={
-            "k": 10,
-            "filter": {
-                "conversation_id": conversation_id,
-            },
+    print("\n========== ROUTER ==========")
+    print(tools)
+
+    contexts = []
+    sources = []
+
+    if "PDF" in tools:
+
+        pdf_result = get_pdf_context(
+            standalone_question,
+            conversation_id,
+        )
+
+        if pdf_result["context"].strip():
+
+            contexts.append(
+                f"""
+PDF Context
+
+{pdf_result['context']}
+"""
+            )
+
+            sources.append(
+                pdf_result["source"]
+            )
+
+    if "WEB" in tools:
+
+        web_result = get_web_context(
+            standalone_question,
+        )
+
+        if web_result["context"].strip():
+
+            contexts.append(
+                f"""
+Web Context
+
+{web_result['context']}
+"""
+            )
+
+            sources.append(
+                web_result["source"]
+            )
+
+    if not contexts:
+
+        contexts.append(
+            "No relevant context was retrieved."
+        )
+
+    combined_context = "\n\n".join(
+        contexts
+    )
+
+    formatted_prompt = answer_prompt.invoke(
+        {
+            "chat_history": chat_history,
+            "context": combined_context,
+            "question": latest_question,
         }
     )
-
-    documents = retriever.invoke(
-        standalone_question
-    )
-
-    retrieved_documents = rerank_documents(
-        standalone_question,
-        documents,
-    )
-
-    print("\nCrossEncoder Scores\n")
-
-    for document, score in retrieved_documents:
-        print(f"{score:.4f}")
-
-    best_score = (
-        retrieved_documents[0][1]
-        if retrieved_documents
-        else 0
-    )
-
-    print(f"\nBest Score: {best_score:.4f}")
-
-    if best_score >= RETRIEVAL_THRESHOLD:
-
-        print("\nUsing PDF Context\n")
-
-        context = "\n\n".join(
-            document.page_content
-            for document, score in retrieved_documents
-        )
-
-        formatted_prompt = answer_prompt.invoke(
-            {
-                "chat_history": chat_history,
-                "context": context,
-                "question": latest_question,
-            }
-        )
-
-    else:
-
-        print("\nUsing Web Search\n")
-
-        web_context = search_web(
-            standalone_question
-        )
-
-        formatted_prompt = web_search_prompt.invoke(
-            {
-                "web_context": web_context,
-                "question": latest_question,
-            }
-        )
 
     response = llm.invoke(
         formatted_prompt
     )
 
-    return response.content
+    final_answer = response.content.strip()
 
-def route_question(question):
+    if sources:
 
-    router_messages = router_prompt.invoke(
-        {
-            "question": question
-        }
-    )
+        unique_sources = list(
+            dict.fromkeys(sources)
+        )
 
-    response = llm.invoke(
-        router_messages
-    )
+        final_answer += "\n\nSources\n"
 
-    return response.content.strip()
+        for source in unique_sources:
+            final_answer += f"- {source}\n"
+
+    return final_answer

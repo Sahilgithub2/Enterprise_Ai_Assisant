@@ -6,30 +6,37 @@ web_search_prompt = ChatPromptTemplate.from_messages(
         (
             "system",
             """
-You are a helpful AI assistant.
+You are an Enterprise AI Assistant.
 
-Answer the user's question using ONLY the provided web search results.
+Answer the user's question using ONLY the supplied web search results.
 
-If the answer cannot be determined from the search results,
-say that you couldn't find enough information.
+Rules:
 
-Do not make up facts.
+1. Do not invent facts.
+
+2. If the search results are insufficient,
+say so clearly.
+
+3. At the end include
+
+Sources
+
+Web Search
 """
         ),
-
         (
             "human",
             """
-Web Search Results:
+Web Context
 
 {web_context}
 
-----------------------
+-----------------------
 
-Question:
+Question
 
 {question}
 """
-        )
+        ),
     ]
 )

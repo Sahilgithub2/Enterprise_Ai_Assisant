@@ -1,3 +1,5 @@
+from sqlalchemy.orm import Session
+
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.core.config import GEMINI_API_KEY
@@ -5,6 +7,7 @@ from app.core.config import GEMINI_API_KEY
 from app.prompts.chat_prompts import (
     rewrite_prompt,
     answer_prompt,
+    summary_prompt,
 )
 
 from app.prompts.router_prompt import (
@@ -14,6 +17,13 @@ from app.prompts.router_prompt import (
 from app.tools import (
     get_pdf_context,
     get_web_context,
+)
+
+from app.services.memory_service import (
+    get_summary,
+    save_summary,
+    should_summarize,
+    get_conversation_text,
 )
 
 
@@ -40,9 +50,8 @@ def rewrite_question(
     return response.content.strip()
 
 
-def route_question(
-    question,
-):
+def route_question(question):
+
     router_messages = router_prompt.invoke(
         {
             "question": question,
@@ -51,16 +60,47 @@ def route_question(
 
     response = llm.invoke(router_messages)
 
-    tools = [
+    return [
         tool.strip().upper()
         for tool in response.content.split(",")
         if tool.strip()
     ]
 
-    return tools
+
+def generate_summary(
+    db: Session,
+    conversation_id: str,
+):
+    if not should_summarize(
+        db,
+        conversation_id,
+    ):
+        return
+
+    conversation = get_conversation_text(
+        db,
+        conversation_id,
+    )
+
+    prompt = summary_prompt.invoke(
+        {
+            "conversation": conversation,
+        }
+    )
+
+    response = llm.invoke(prompt)
+
+    save_summary(
+        db,
+        conversation_id,
+        response.content.strip(),
+    )
+
+    print("\n========== MEMORY SUMMARY UPDATED ==========")
 
 
 def ask_ai(
+    db: Session,
     messages,
     conversation_id,
 ):
@@ -84,7 +124,21 @@ def ask_ai(
     print(tools)
 
     contexts = []
-    sources = []
+
+    summary = get_summary(
+        db,
+        conversation_id,
+    )
+
+    if summary:
+
+        contexts.append(
+            f"""
+Conversation Summary
+
+{summary}
+"""
+        )
 
     if "PDF" in tools:
 
@@ -93,7 +147,7 @@ def ask_ai(
             conversation_id,
         )
 
-        if pdf_result["context"].strip():
+        if pdf_result["context"]:
 
             contexts.append(
                 f"""
@@ -103,17 +157,13 @@ PDF Context
 """
             )
 
-            sources.append(
-                pdf_result["source"]
-            )
-
     if "WEB" in tools:
 
         web_result = get_web_context(
             standalone_question,
         )
 
-        if web_result["context"].strip():
+        if web_result["context"]:
 
             contexts.append(
                 f"""
@@ -123,43 +173,25 @@ Web Context
 """
             )
 
-            sources.append(
-                web_result["source"]
-            )
-
     if not contexts:
 
         contexts.append(
-            "No relevant context was retrieved."
+            "No relevant context available."
         )
 
-    combined_context = "\n\n".join(
-        contexts
-    )
-
-    formatted_prompt = answer_prompt.invoke(
+    prompt = answer_prompt.invoke(
         {
             "chat_history": chat_history,
-            "context": combined_context,
+            "context": "\n\n".join(contexts),
             "question": latest_question,
         }
     )
 
-    response = llm.invoke(
-        formatted_prompt
+    response = llm.invoke(prompt)
+
+    generate_summary(
+        db,
+        conversation_id,
     )
 
-    final_answer = response.content.strip()
-
-    if sources:
-
-        unique_sources = list(
-            dict.fromkeys(sources)
-        )
-
-        final_answer += "\n\nSources\n"
-
-        for source in unique_sources:
-            final_answer += f"- {source}\n"
-
-    return final_answer
+    return response.content.strip()

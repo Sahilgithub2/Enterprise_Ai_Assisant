@@ -44,6 +44,7 @@ def chat(
         print("Conversation summary will be generated in a future sprint.")
 
     ai_response = ask_ai(
+        db,
         history,
         request.conversation_id,
     )

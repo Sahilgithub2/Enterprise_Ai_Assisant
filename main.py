@@ -7,6 +7,7 @@ from app.models.db_models import Base
 from app.routes.upload_routes import (
     router as upload_router
 )
+from app.models.conversation_summary import ConversationSummary
 
 
 Base.metadata.create_all(bind=engine)

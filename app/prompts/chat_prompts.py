@@ -97,3 +97,36 @@ Question
         ),
     ]
 )
+summary_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            "system",
+            """
+You are creating a persistent memory for an AI assistant.
+
+Summarize the conversation while preserving only information
+that will be useful in future interactions.
+
+Include:
+
+- Important user goals
+- Decisions made
+- Technical topics discussed
+- Problems already solved
+- Preferences explicitly stated
+
+Do NOT include greetings or casual conversation.
+
+Keep the summary under 200 words.
+"""
+        ),
+        (
+            "human",
+            """
+Conversation
+
+{conversation}
+"""
+        ),
+    ]
+)

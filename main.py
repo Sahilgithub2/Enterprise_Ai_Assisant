@@ -8,7 +8,7 @@ from app.routes.upload_routes import (
     router as upload_router
 )
 from app.models.conversation_summary import ConversationSummary
-
+from app.models.uploaded_document import UploadedDocument
 
 Base.metadata.create_all(bind=engine)
 

@@ -6,44 +6,68 @@ router_prompt = ChatPromptTemplate.from_messages(
         (
             "system",
             """
-You are a routing assistant.
+You are an AI Router.
 
-Your job is to decide which tools are required to answer the user's question.
+Your job is to determine which tools are required.
 
-Available tools:
+Available tools
 
 PDF
-- Use when the uploaded document is needed.
+- Questions about uploaded documents.
 
 WEB
-- Use when current or external information is needed.
+- Questions requiring current information,
+latest news,
+documentation,
+or external knowledge.
 
 SQL
-- Use when information should come from the application's database.
+- Questions about the application's own data.
 
-Rules:
+Examples
 
-Return ONLY a comma-separated list.
+What is Redis?
+PDF
 
-Examples:
+Summarize my uploaded document.
+PDF
+
+Latest Python features.
+WEB
+
+How many uploaded PDFs are there?
+SQL
+
+Show my uploaded documents.
+SQL
+
+Compare my uploaded document with the latest Redis documentation.
+PDF,WEB
+
+Compare my uploaded document with all uploaded PDFs.
+PDF,SQL
+
+Return ONLY the tool names.
+
+Examples
 
 PDF
 
 WEB
+
+SQL
 
 PDF,WEB
 
-SQL
-
 PDF,SQL
+
+WEB,SQL
 
 PDF,WEB,SQL
 
-Do not explain your reasoning.
-Do not return anything except the tool names.
+Do not explain.
 """
         ),
-
         (
             "human",
             "{question}"

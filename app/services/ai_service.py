@@ -17,6 +17,7 @@ from app.prompts.router_prompt import (
 from app.tools import (
     get_pdf_context,
     get_web_context,
+    get_sql_context,
 )
 
 from app.services.memory_service import (
@@ -50,8 +51,9 @@ def rewrite_question(
     return response.content.strip()
 
 
-def route_question(question):
-
+def route_question(
+    question,
+):
     router_messages = router_prompt.invoke(
         {
             "question": question,
@@ -124,6 +126,7 @@ def ask_ai(
     print(tools)
 
     contexts = []
+    sources = []
 
     summary = get_summary(
         db,
@@ -147,7 +150,7 @@ Conversation Summary
             conversation_id,
         )
 
-        if pdf_result["context"]:
+        if pdf_result["context"].strip():
 
             contexts.append(
                 f"""
@@ -157,13 +160,17 @@ PDF Context
 """
             )
 
+            sources.append(
+                pdf_result["source"]
+            )
+
     if "WEB" in tools:
 
         web_result = get_web_context(
             standalone_question,
         )
 
-        if web_result["context"]:
+        if web_result["context"].strip():
 
             contexts.append(
                 f"""
@@ -171,6 +178,31 @@ Web Context
 
 {web_result['context']}
 """
+            )
+
+            sources.append(
+                web_result["source"]
+            )
+
+    if "SQL" in tools:
+
+        sql_result = get_sql_context(
+            db,
+            standalone_question,
+        )
+
+        if sql_result["context"].strip():
+
+            contexts.append(
+                f"""
+SQL Context
+
+{sql_result['context']}
+"""
+            )
+
+            sources.append(
+                sql_result["source"]
             )
 
     if not contexts:
@@ -187,11 +219,22 @@ Web Context
         }
     )
 
-    response = llm.invoke(prompt)
+    response = llm.invoke(
+        prompt
+    )
 
     generate_summary(
         db,
         conversation_id,
     )
 
-    return response.content.strip()
+    final_answer = response.content.strip()
+
+    if sources:
+
+        final_answer += "\n\nSources\n"
+
+        for source in sorted(set(sources)):
+            final_answer += f"- {source}\n"
+
+    return final_answer

@@ -18,6 +18,7 @@ from app.tools import (
     get_pdf_context,
     get_web_context,
     get_sql_context,
+    get_jira_context,
 )
 
 from app.services.memory_service import (
@@ -205,6 +206,26 @@ SQL Context
                 sql_result["source"]
             )
 
+        if "JIRA" in tools:
+
+                jira_result = get_jira_context(
+                    standalone_question,
+                )
+
+                if jira_result["context"].strip():
+
+                    contexts.append(
+                        f"""
+        Jira Context
+
+        {jira_result['context']}
+        """
+                    )
+
+                    sources.append(
+                        jira_result["source"]
+                    )
+        
     if not contexts:
 
         contexts.append(

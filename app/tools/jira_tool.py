@@ -26,11 +26,15 @@ llm = ChatGoogleGenerativeAI(
 )
 
 
-def parse_intent(question: str) -> JiraIntent:
+def parse_intent(
+    question: str,
+    previous_context: str = "",
+) -> JiraIntent:
 
     prompt = jira_prompt.invoke(
         {
             "question": question,
+            "context": previous_context,
         }
     )
 
@@ -100,11 +104,18 @@ Assignee  : {assignee}
 """.strip()
 
 
-def get_jira_context(question: str):
+def get_jira_context(
+    question: str,
+    previous_context: str = "",
+):
 
     print("\n========== JIRA AGENT ==========\n")
-
-    intent = parse_intent(question)
+    print("\n========== PREVIOUS CONTEXT ==========\n")
+    print(previous_context)
+    intent = parse_intent(
+        question,
+        previous_context,
+    )
 
     print(intent)
 
@@ -164,10 +175,8 @@ def get_jira_context(question: str):
 
         for transition in transitions["transitions"]:
 
-            if (
-                transition["name"].lower()
-                == intent.status.lower()
-            ):
+            if transition["name"].lower() == intent.status.lower():
+
                 transition_id = transition["id"]
                 break
 

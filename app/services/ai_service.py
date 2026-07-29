@@ -128,6 +128,7 @@ def ask_ai(
 
     contexts = []
     sources = []
+    accumulated_context = ""
 
     summary = get_summary(
         db,
@@ -136,30 +137,35 @@ def ask_ai(
 
     if summary:
 
-        contexts.append(
-            f"""
+        summary_context = f"""
 Conversation Summary
 
 {summary}
-"""
-        )
+""".strip()
+
+        contexts.append(summary_context)
+
+        accumulated_context += summary_context + "\n\n"
 
     if "PDF" in tools:
 
         pdf_result = get_pdf_context(
             standalone_question,
             conversation_id,
+            previous_context=accumulated_context,
         )
 
         if pdf_result["context"].strip():
 
-            contexts.append(
-                f"""
+            pdf_context = f"""
 PDF Context
 
 {pdf_result['context']}
-"""
-            )
+""".strip()
+
+            contexts.append(pdf_context)
+
+            accumulated_context += pdf_context + "\n\n"
 
             sources.append(
                 pdf_result["source"]
@@ -169,17 +175,20 @@ PDF Context
 
         web_result = get_web_context(
             standalone_question,
+            previous_context=accumulated_context,
         )
 
         if web_result["context"].strip():
 
-            contexts.append(
-                f"""
+            web_context = f"""
 Web Context
 
 {web_result['context']}
-"""
-            )
+""".strip()
+
+            contexts.append(web_context)
+
+            accumulated_context += web_context + "\n\n"
 
             sources.append(
                 web_result["source"]
@@ -190,42 +199,48 @@ Web Context
         sql_result = get_sql_context(
             db,
             standalone_question,
+            previous_context=accumulated_context,
         )
 
         if sql_result["context"].strip():
 
-            contexts.append(
-                f"""
+            sql_context = f"""
 SQL Context
 
 {sql_result['context']}
-"""
-            )
+""".strip()
+
+            contexts.append(sql_context)
+
+            accumulated_context += sql_context + "\n\n"
 
             sources.append(
                 sql_result["source"]
             )
 
-        if "JIRA" in tools:
+    if "JIRA" in tools:
 
-                jira_result = get_jira_context(
-                    standalone_question,
-                )
+        jira_result = get_jira_context(
+            standalone_question,
+            previous_context=accumulated_context,
+        )
 
-                if jira_result["context"].strip():
+        if jira_result["context"].strip():
 
-                    contexts.append(
-                        f"""
-        Jira Context
+            jira_context = f"""
+Jira Context
 
-        {jira_result['context']}
-        """
-                    )
+{jira_result['context']}
+""".strip()
 
-                    sources.append(
-                        jira_result["source"]
-                    )
-        
+            contexts.append(jira_context)
+
+            accumulated_context += jira_context + "\n\n"
+
+            sources.append(
+                jira_result["source"]
+            )
+
     if not contexts:
 
         contexts.append(

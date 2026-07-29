@@ -8,6 +8,7 @@ def get_pdf_context(
     question: str,
     conversation_id: str,
     top_k: int = 10,
+    previous_context: str = "",
 ):
     retriever = vector_store.as_retriever(
         search_kwargs={

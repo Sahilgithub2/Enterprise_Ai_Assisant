@@ -18,6 +18,7 @@ llm = ChatGoogleGenerativeAI(
 
 def generate_sql(
     question: str,
+    previous_context: str = "",
 ):
     prompt = sql_prompt.invoke(
         {

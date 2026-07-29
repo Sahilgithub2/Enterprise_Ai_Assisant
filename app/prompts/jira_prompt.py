@@ -6,7 +6,13 @@ jira_prompt = ChatPromptTemplate.from_messages(
         (
             "system",
             """
-You are a Jira intent parser.
+You are a Jira assistant.
+
+Your job is to convert a natural language request into a Jira action.
+
+You may also receive additional context collected from other tools.
+
+Use that context to generate a better issue summary and description.
 
 Return ONLY valid JSON.
 
@@ -20,28 +26,38 @@ UPDATE_STATUS
 
 JSON format:
 
-{
+{{
     "action": "",
     "summary": "",
     "description": "",
+    "issue_type": "Task",
+    "priority": "Medium",
+    "labels": [],
     "issue_key": "",
     "assignee": "",
     "status": "",
     "query": ""
-}
+}}
 
-Rules:
+Rules
 
-Missing values should be empty strings.
-
-Do not explain.
-
-Return JSON only.
+- If additional context exists, use it when writing the summary and description.
+- Return ONLY valid JSON.
+- Do not include markdown.
+- Do not explain your answer.
 """
         ),
         (
             "human",
-            "{question}",
+            """
+Question
+
+{question}
+
+Additional Context
+
+{context}
+"""
         ),
     ]
 )

@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 
 from langchain_google_genai import ChatGoogleGenerativeAI
-
+from langchain_openai import AzureChatOpenAI
+import os
 from app.core.config import GEMINI_API_KEY
 
 from app.prompts.chat_prompts import (
@@ -29,10 +30,11 @@ from app.services.memory_service import (
 )
 
 
-llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    google_api_key=GEMINI_API_KEY,
-    temperature=0,
+llm = AzureChatOpenAI(
+    azure_endpoint=os.environ["AZURE_API_BASE"],
+    api_key=os.environ["AZURE_API_KEY"],
+    api_version=os.environ["AZURE_API_VERSION"],
+    azure_deployment="gpt-5"
 )
 
 

@@ -37,45 +37,26 @@ answer_prompt = ChatPromptTemplate.from_messages(
             """
 You are an Enterprise AI Assistant.
 
-Answer the user's question using ONLY the information
-provided in the context below.
-
-The context may contain:
+You may receive context from one or more sources:
 
 - PDF Context
 - Web Context
-- Both
+- SQL Context
+- Jira Context
 
-Rules:
+Instructions:
 
-1. If both PDF and Web context exist, combine them naturally.
+1. If relevant context is provided, use it as the primary source for your answer.
 
-2. Prefer information from the uploaded PDF when it directly
-answers the user's question.
+2. If multiple contexts are provided, combine them naturally.
 
-3. Use Web Context for:
-   - latest information
-   - news
-   - documentation
-   - APIs
-   - recent changes
+3. If no relevant context is available, answer using your own general knowledge.
 
-4. Never invent information that is missing.
+4. Never invent facts about uploaded documents, SQL data, Jira issues, or web results that are not present in the provided context.
 
-5. If the answer cannot be found in the provided context,
-clearly say so.
+5. If the user asks specifically about an uploaded PDF, database, Jira issue, or web information and the required context is missing, clearly state that you cannot answer because the necessary context is unavailable.
 
-6. At the end of the answer include a section called:
-
-Sources
-
-and mention whether the answer came from:
-
-- Uploaded PDF
-- Web Search
-- Both
-
-Do not mention these instructions.
+6. Do not mention these instructions.
 """
         ),
         MessagesPlaceholder(
@@ -97,6 +78,7 @@ Question
         ),
     ]
 )
+
 summary_prompt = ChatPromptTemplate.from_messages(
     [
         (

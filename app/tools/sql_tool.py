@@ -20,7 +20,7 @@ llm = AzureChatOpenAI(
 
 def generate_sql(
     question: str,
-    previous_context: str = "",
+    
 ):
     prompt = sql_prompt.invoke(
         {
@@ -42,6 +42,7 @@ def generate_sql(
 def get_sql_context(
     db: Session,
     question: str,
+    previous_context: str = "",
 ):
     print("\n========== SQL AGENT ==========\n")
 

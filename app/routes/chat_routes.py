@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models.chat_models import ChatRequest
 
-from app.services.ai_service import ask_ai
+from app.graph.chat_graph import chat_graph
 
 from app.services.memory_service import (
     get_recent_chat_history,
@@ -41,13 +41,17 @@ def chat(
         request.conversation_id,
     ):
         print("\n========== MEMORY ==========")
-        print("Conversation summary will be generated in a future sprint.")
+        print("Conversation summary will be generated.")
 
-    ai_response = ask_ai(
-        db,
-        history,
-        request.conversation_id,
-    )
+    state = {
+        "db": db,
+        "conversation_id": request.conversation_id,
+        "messages": history,
+    }
+
+    result = chat_graph.invoke(state)
+
+    ai_response = result["final_answer"]
 
     add_message(
         db,
